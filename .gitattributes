@@ -1,3 +1,3 @@
 # Auto detect text files and perform LF normalization
-*.fpc cpp
+*.fpc linguist-language=cpp
 * text=auto
