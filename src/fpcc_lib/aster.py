@@ -147,8 +147,22 @@ class ThreadIdx(Expression):
         global TARGET
         if TARGET == "Metal":
             if len(self.indexers) == 1:
-                return "mtl_thread"
-            return "mtl_thread." + ["x","y","z"][self.indexers.index(self.attr)]
+                return "(int)mtl_thread"
+            return "(int)mtl_thread." + ["x","y","z"][self.indexers.index(self.attr)]
+        
+class BlockIdx(Expression):
+    def __init__(self,attr : str):
+        global THREAD_INDEXERS
+        self.type = IntType(32)
+        self.attr = attr
+        self.indexers = THREAD_INDEXERS
+        if not self.attr in self.indexers:
+            raise Exception("Invalid BlockIdx")
+        
+    def __str__(self):
+        global TARGET
+        if TARGET == "Metal":
+            return "__FPC_blockidx" + str(self.indexers.index(self.attr))
         
 class IncrPost(Expression):
     def __init__(self,var : Expression, op : str):

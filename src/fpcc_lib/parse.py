@@ -32,6 +32,13 @@ class ReturnLine(Line):
             return "return;"
         return "return " + str(self.expr) + ";"
     
+class BreakLine(Line):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return "break;"
+
 class IfStatement(Line):
     def __init__(self,expr : aster.Expression, target : str,state):
         super().__init__()
@@ -141,12 +148,23 @@ class Kernel:
                     input_strings.append("device " + str(typ) + " " + str(name))
                 else:
                     input_strings.append("device " + str(typ) + " &" + str(name))
+            for i in range(len(indexers)):
+                input_strings.append("device int &__FPC_block" + str(i))
             out += ", ".join(input_strings)
             tmp = ""
             if len(indexers) > 1:
                 tmp = str(len(indexers))
             out += ", uint" + tmp + " mtl_thread [[thread_position_in_grid]]"
             out += ")\n{\n"
+            if len(indexers) == 1:
+                out += "int __FPC_blockidx0 = mtl_thread / __FPC_block0;\n"
+            if len(indexers) == 2:
+                out += "int __FPC_blockidx0 = mtl_thread.x / __FPC_block0;\n"
+                out += "int __FPC_blockidx1 = mtl_thread.y / __FPC_block1;\n"
+            if len(indexers) == 3:
+                out += "int __FPC_blockidx0 = mtl_thread.x / __FPC_block0;\n"
+                out += "int __FPC_blockidx1 = mtl_thread.y / __FPC_block1;\n"
+                out += "int __FPC_blockidx2 = mtl_thread.z / __FPC_block2;\n"
             for line in self.lines:
                 out += str(line) + "\n"
             out += "\n}\n"
@@ -197,12 +215,15 @@ class ParserState(object):
             arg_strings.append(typ_str + " " + arg_name)
         out += ", ".join(arg_strings) + ")\n{\n"
         if i == 1:
+            extra = ["block_size[0]","1","1"]
             out += "MTL::Size m_grid_size = MTL::Size(block_size[0] * num_blocks[0], 1, 1);\nMTL::Size m_thread_group_size = MTL::Size(block_size[0], 1, 1);\n"
         if i == 2:
+            extra = ["block_size[0]","block_size[1]","1"]
             out += "MTL::Size m_grid_size = MTL::Size(block_size[0] * num_blocks[0], block_size[1] * num_blocks[1], 1);\nMTL::Size m_thread_group_size = MTL::Size(block_size[0], block_size[1], 1);\n"
         if i == 3:
+            extra = ["block_size[0]","block_size[1]","block_size[2]"]
             out += "MTL::Size m_grid_size = MTL::Size(block_size[0] * num_blocks[0], block_size[1] * num_blocks[1], block_size[2] * num_blocks[2]);\nMTL::Size m_thread_group_size = MTL::Size(block_size[0], block_size[1], block_size[2]);\n"
-        out += "FPC::lib.dispatch_function(" + '"' + name + '"' + ",m_grid_size,m_thread_group_size," + ",".join([i[1] for i in inputs]) + ");\n}\n"
+        out += "FPC::lib.dispatch_function(" + '"' + name + '"' + ",m_grid_size,m_thread_group_size," + ",".join([i[1] for i in inputs] + extra) + ");\n}\n"
         return out
     
     def generate_metal_bindings(self):
@@ -537,6 +558,10 @@ def get_parser(filename="tokens.txt"):
         if len(p) == 3:
             return ReturnLine(p[1])
         return ReturnLine()
+    
+    @pg.production('line : BREAK SEMI_COLON')
+    def return_line(state : ParserState,p):
+        return BreakLine()
 
     @pg.production('expression : OPEN_PAREN type CLOSE_PAREN expression')
     def cast(state : ParserState,p):
@@ -624,6 +649,11 @@ def get_parser(filename="tokens.txt"):
     def thread_idx(state,p):
         state.log('expression : THREAD PERIOD IDENTIFIER')
         return aster.ThreadIdx(p[2].value)
+    
+    @pg.production('expression : BLOCK PERIOD IDENTIFIER')
+    def thread_idx(state,p):
+        state.log('expression : BLOCK PERIOD IDENTIFIER')
+        return aster.BlockIdx(p[2].value)
 
     @pg.production('expression : expression PLUS expression')
     @pg.production('expression : expression MINUS expression')
@@ -641,6 +671,8 @@ def get_parser(filename="tokens.txt"):
     @pg.production('expression : expression AMP expression')
     @pg.production('expression : expression VERT expression')
     @pg.production('expression : expression HAT expression')
+    @pg.production('expression : expression LEFT_SHIFT expression')
+    @pg.production('expression : expression RIGHT_SHIFT expression')
     def binop(state,p):
         state.log('expression : expression OP expression')
         return state.get_binop(p[1].value,p[0],p[2])

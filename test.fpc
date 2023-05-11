@@ -1,12 +1,42 @@
 //this is a comment
 
-float test(int a, int b){
-    float c = (float)(a + b);
-    return c;
-}
+//float test(int a, int b){
+    //float c = (float)(a + b);
+    //return c;
+//}
 
-kernel add_arrays[i](const float* inA, const float* inB, float* result, float a){
+//kernel add_arrays[i](const float* inA, const float* inB, float* result, float a){
     //result[thread.i] = inA[thread.i] + inB[thread.i];
-    result[thread.i] = a;
+    //result[thread.i] = a;
 
+//}
+
+kernel rsqracc[i](const float* in, float* out, int n){
+    float my_x;
+    float my_y;
+    float my_z;
+    my_x = in[thread.i*3];
+    my_y = in[thread.i*3+1];
+    my_z = in[thread.i*3+2];
+    float other_x;
+    float other_y;
+    float other_z;
+    float dx;
+    float dy;
+    float dz;
+    float r2;
+    float acc = 0f;
+    for (int i = 0; i < n; i++){
+        if (i != thread.i){
+            other_x = in[i*3];
+            other_y = in[i*3+1];
+            other_z = in[i*3+2];
+            dx = other_x - my_x;
+            dy = other_y - my_y;
+            dz = other_z - my_z;
+            r2 = dx*dx + dy*dy + dz*dz;
+            acc += 1f/r2;
+        }
+    }
+    out[thread.i] = acc;
 }

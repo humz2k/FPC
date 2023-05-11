@@ -5,9 +5,10 @@ LDFLAGS=-framework Metal -framework Foundation -framework Cocoa -framework CoreG
 VPATH=./metal-cpp
 
 main:
-	bin/fpclib test.fpc --target Metal -o test_lib.hpp
+	fpclib test.fpc --target Metal -o test_lib.hpp --save-temps
 	$(CC) test.cpp $(CFLAGS) $(LDFLAGS) -o test.o	
 
 clean:
 	rm *.o
+	rm test_lib.hpp
 	rm *.metallib

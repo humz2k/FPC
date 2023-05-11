@@ -50,7 +50,7 @@ def compile_metal_lib(fnames,header_out,keep_temps = True,metal_lib_file = None)
         tmp_air_file = get_tmp_file("air")
         with open(tmp_metal_file,"w") as f:
             f.write(out)
-        os.system("xcrun -sdk macosx metal -c " + tmp_metal_file + " -o " + tmp_air_file)
+        os.system("xcrun -sdk macosx metal -Wno-unused-variable -c " + tmp_metal_file + " -o " + tmp_air_file)
 
         if not keep_temps:
             os.remove(tmp_metal_file)
