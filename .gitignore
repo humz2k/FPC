@@ -147,6 +147,9 @@ cython_debug/
 examples/nbody/*.metallib
 examples/nbody/*.o
 examples/nbody/nbody_kernels.hpp
+examples/nbody_fpclib/*.metallib
+examples/nbody_fpclib/*.o
+examples/nbody_fpclib/nbody_kernels.hpp
 .vscode
 
 # PyCharm

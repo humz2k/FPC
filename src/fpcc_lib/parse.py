@@ -399,13 +399,13 @@ def get_parser(filename="tokens.txt"):
     def program(state,p):
         state.log('program : program kernel|function')
 
-    @pg.production('function_open : type FUNCTION_NAME OPEN_PAREN CLOSE_PAREN OPEN_CURL')
+    @pg.production('function_open : DEVICE type FUNCTION_NAME OPEN_PAREN CLOSE_PAREN OPEN_CURL')
     def function_open(state : ParserState,p):
-        return state.add_function(p[1].value,p[0],[])
+        return state.add_function(p[2].value,p[1],[])
 
-    @pg.production('function_open_header : type FUNCTION_NAME OPEN_PAREN type IDENTIFIER')
+    @pg.production('function_open_header : DEVICE type FUNCTION_NAME OPEN_PAREN type IDENTIFIER')
     def func_header_open(state : ParserState,p):
-        return [p[0],p[1].value,(p[3],p[4].value)]
+        return [p[1],p[2].value,(p[4],p[5].value)]
     
     @pg.production('function_open_header : function_open_header COMMA type IDENTIFIER')
     def func_header_cont(state: ParserState,p):
@@ -430,17 +430,17 @@ def get_parser(filename="tokens.txt"):
         state.local_variables.pop(-1)
         return p[0]
 
-    @pg.production('kernel : KERNEL KERNEL_NAME OPEN_SQUARE IDENTIFIER CLOSE_SQUARE OPEN_PAREN CLOSE_PAREN')
+    @pg.production('kernel : DEVICE KERNEL KERNEL_NAME OPEN_SQUARE IDENTIFIER CLOSE_SQUARE OPEN_PAREN CLOSE_PAREN')
     def no_input_kernel(state,p):
-        state.log('kernel : KERNEL KERNEL_NAME OPEN_PAREN CLOSE_PAREN')
+        state.log('kernel : DEVICE KERNEL KERNEL_NAME OPEN_PAREN CLOSE_PAREN')
         state.throw("EmptyKernel")
 
-    @pg.production('kernel_open_header : KERNEL KERNEL_NAME OPEN_SQUARE IDENTIFIER CLOSE_SQUARE OPEN_PAREN type IDENTIFIER')
+    @pg.production('kernel_open_header : DEVICE KERNEL KERNEL_NAME OPEN_SQUARE IDENTIFIER CLOSE_SQUARE OPEN_PAREN type IDENTIFIER')
     def open_kernel_header(state,p):
-        state.log('kernel_open_header : KERNEL KERNEL_NAME OPEN_SQUARE IDENTIFIER CLOSE_SQUARE OPEN_PAREN type IDENTIFIER')
-        thread_indexers = list(p[3].value)
+        state.log('kernel_open_header : DEVICE KERNEL KERNEL_NAME OPEN_SQUARE IDENTIFIER CLOSE_SQUARE OPEN_PAREN type IDENTIFIER')
+        thread_indexers = list(p[4].value)
         state.set_thread_indexers(thread_indexers)
-        return [p[1].value,(p[6],p[7].value)]
+        return [p[2].value,(p[7],p[8].value)]
     
     @pg.production('kernel_open_header : kernel_open_header COMMA type IDENTIFIER')
     def cont_kernel_header(state,p):

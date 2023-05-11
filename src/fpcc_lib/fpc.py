@@ -90,7 +90,7 @@ def compile_lib(fnames,target,header_out,keep_temps=True,**kwargs):
 def extract_kernels(fname):
     with open(fname,"r") as f:
         raw = f.read()
-    kernel_headers = re.findall(r"\bkernel\b.*\{",raw)
+    kernel_headers = re.findall(r"\bdevice\b.*\{",raw)
     kernels = []
     for kernel in kernel_headers:
         brace_amount = 1
@@ -111,21 +111,35 @@ def extract_kernels(fname):
     return raw, kernels_file
             
 def preprocess(fname):
-    tmp_c_file = get_tmp_file("cpp")
+    tmp_c_file_2 = get_tmp_file("cpp")
     with open(fname,"r") as f:
         raw = f.read()
-    raw =  re.sub(r".*fpc_headers\.hpp.*\n","\n",raw)
-    with open(tmp_c_file,"w") as f:
+    #raw =  re.sub(r".*fpc_headers\.hpp.*\n","\n",raw)
+    #raw =  re.sub(r".*\.hpp.*\n","\n",raw)
+    headers = [i for i in re.findall(r"\s*\#include.*\n",raw) if not "fpc_headers.hpp" in i]
+    raw =  re.sub(r"\s*\#include.*\n","\n",raw)
+    tmp = []
+    keep = []
+    for i in headers:
+        if ".fpc" in i:
+            keep.append(i)
+        else:
+            tmp.append(i)
+    headers = tmp
+    raw = "#define FPC_PREPROCESS\n" "\n".join(keep) + "\n" + raw
+    with open(tmp_c_file_2,"w") as f:
         f.write(raw)
-    tmp_next_c_file = get_tmp_file("cpp")
-    os.system("clang++ " + tmp_c_file + " -E > " + tmp_next_c_file)
+    tmp_c_file = get_tmp_file("cpp")
+    os.system("cpp " + tmp_c_file_2 + " > " + tmp_c_file)
+    os.remove(tmp_c_file_2)
     tmp_final_c_file = get_tmp_file("cpp")
     tmp_fpc_file = get_tmp_file("fpc")
-    raw,kernels = extract_kernels(tmp_next_c_file)
+    raw,kernels = extract_kernels(tmp_c_file)
     os.remove(tmp_c_file)
-    os.remove(tmp_next_c_file)
     header = get_tmp_file("hpp")
-    raw = '#include "' + header + '"\n' + raw
+
+    put_back = "\n".join(headers) + "\n"
+    raw = put_back + '#include "' + header + '"\n' + raw
     with open(tmp_final_c_file,"w") as f:
         f.write(raw)
     with open(tmp_fpc_file,"w") as f:

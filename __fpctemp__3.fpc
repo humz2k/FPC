@@ -1,3 +1,0 @@
-kernel add_arrays[i](const float* inA, const float* inB, float* result){
-    result[thread.i] = inA[thread.i] + inB[thread.i];
-}

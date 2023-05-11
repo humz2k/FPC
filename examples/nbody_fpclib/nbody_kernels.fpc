@@ -1,12 +1,12 @@
 //this is a comment
 
-kernel add2D[i](const float* in, float mul, float* out){
+device kernel add2D[i](const float* in, float mul, float* out){
     out[thread.i*3] += in[thread.i*3] * mul;
     out[thread.i*3+1] += in[thread.i*3+1] * mul;
     out[thread.i*3+2] += in[thread.i*3+2] * mul;
 }
 
-kernel calc_acc[i](const float* in, float* out, int n){
+device kernel calc_acc[i](const float* in, float* out, int n){
     float my_x, my_y, my_z;
     my_x = in[thread.i*3]; my_y = in[thread.i*3+1]; my_z = in[thread.i*3+2];
     float other_x, other_y, other_z;

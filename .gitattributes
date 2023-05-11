@@ -3,3 +3,4 @@
 * text=auto
 
 *.fpc linguist-language=C
+*.fpcpp linguist-language=C++

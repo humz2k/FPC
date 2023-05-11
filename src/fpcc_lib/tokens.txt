@@ -58,6 +58,7 @@ FOR \bfor\b
 WHILE \bwhile\b
 BREAK \bbreak\b
 RETURN \breturn\b
+DEVICE \bdevice\b
 
 INT_LIB_ONE \babs\b
 INT_LIB_TWO \bmax\b|\bmin\b
