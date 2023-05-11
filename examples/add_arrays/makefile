@@ -1,5 +1,5 @@
 main:
-	fpc++ nbody.fpcpp -t Metal -o add_arrays.o
+	fpc++ add_arrays.fpcpp -t Metal -o add_arrays.o
 
 clean:
 	rm *.o
