@@ -1,0 +1,12 @@
+//this is a comment
+
+float test(int a, int b){
+    float c = (float)(a + b);
+    return c;
+}
+
+kernel add_arrays[i](const float* inA, const float* inB, float* result, float a){
+    //result[thread.i] = inA[thread.i] + inB[thread.i];
+    result[thread.i] = a;
+
+}

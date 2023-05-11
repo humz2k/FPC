@@ -1,0 +1,79 @@
+CHAR '([^'])'
+PLUS_PLUS \+\+
+MINUS_MINUS \-\-
+
+PLUS_EQUAL \+\=
+MINUS_EQUAL \-\=
+STAR_EQUAL \*\=
+SLASH_EQUAL \/\=
+PERCENT_EQUAL \%\=
+
+PLUS \+
+MINUS \-
+STAR \*
+SLASH \/
+PERCENT \%
+
+LEFT_SHIFT \<\<
+RIGHT_SHIFT \>\>
+
+EQUAL \=\=
+NOT_EQUAL \!\=
+GREATER \>
+LESS \<
+GREATER_OR_EQUAL \>\=
+LESS_OR_EQUAL \<\=
+AND \&\&
+OR \|\|
+NOT \!
+AMP \&
+VERT \|
+HAT \^
+TILDE \~
+
+ASSIGN \=
+COMMA \,
+
+SEMI_COLON \;
+OPEN_CURL \{
+CLOSE_CURL \}
+
+OPEN_PAREN \(
+CLOSE_PAREN \)
+
+OPEN_SQUARE \[
+CLOSE_SQUARE \]
+
+UNSIGNED \bunsigned\b
+CONST \bconst\b
+RESTRICT \brestrict\b
+TYPE_NAME \bvoid\b|\bchar\b|\bshort\b|\bint\b|\blong\b|\bfloat\b|\bdouble\b
+
+THREAD \bthread\b
+BLOCK \bblock\b
+
+KERNEL \bkernel\b
+
+IF \bif\b
+ELSE \belse\b
+ELIF \belif\b
+FOR \bfor\b
+WHILE \bwhile\b
+BREAK \bbreak\b
+RETURN \breturn\b
+TRUE \btrue\b
+FALSE \bfalse\b
+NULL \bNULL\b
+
+FLOAT_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)f
+HALF_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)h
+LONG_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)l
+SHORT_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)s
+
+NUMBER [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)
+
+IDENTIFIER [a-zA-Z_0-9]+
+
+PERIOD \.
+
+IGNORE \s+
