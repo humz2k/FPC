@@ -1,4 +1,4 @@
-#define FPC_TARGET_METAL
+//#define FPC_TARGET_METAL
 //#define FPC_LOGGING
 #include "nbody_kernels.hpp"
 #include <stdlib.h>
