@@ -1,6 +1,6 @@
 #define FPC_TARGET_METAL
 //#define FPC_LOGGING
-#include "test_lib.hpp"
+#include "nbody_kernels.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>

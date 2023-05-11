@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 void FPC_init(){
-FPC::lib.load_library("/Users/humzaqureshi/GitHub/FPC/__fpctemp__2.metallib");
+FPC::lib.load_library("/Users/humzaqureshi/GitHub/FPC/examples/nbody/__fpctemp__2.metallib");
 FPC::lib.load_kernel("add2D");
 FPC::lib.load_kernel("calc_acc");
 }
