@@ -59,6 +59,15 @@ WHILE \bwhile\b
 BREAK \bbreak\b
 RETURN \breturn\b
 
+INT_LIB_ONE \babs\b
+INT_LIB_TWO \bmax\b|\bmin\b
+INT_LIB_THREE \bmax3\b|\bmedian3\b|\bmin3\b
+
+FLOAT_LIB_REL_ONE \bisfinite\b|\bisinf\b|\bisnan\b|\bisneg\b
+FLOAT_LIB_MATH_ONE \bacos\b|\bacosh\b|\basin\b|\basinh\b|\batan\b|\batanh\b|\bceil\b|\bcos\b|\bcosh\b|\bcospi\b|\bexp\b|\bexp2\b|\bexp10\b|\bfabs\b|\bfloor\b|\blog\b|\blog2\b|\blog10\b|\bround\b|\brsqrt\b|\bsin\b|\bsinh\b|\bsinpi\b|\bsqrt\b|\btan\b|\btanh\b|\btanpi\b
+FLOAT_LIB_MATH_TWO \batan2\b|\bdivide\b|\bfmax\b|\bfmin\b|\bfmod\b|\bpow\b
+FLOAT_LIB_MATH_THREE \bfma\b
+
 FLOAT_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)f
 HALF_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)h
 LONG_LIT [+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)l

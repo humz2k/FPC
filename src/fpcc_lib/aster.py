@@ -231,3 +231,12 @@ class FunctionCall(Expression):
     
     def __str__(self):
         return self.name + "(" + ",".join([str(i) for i in self.inputs]) + ")"
+    
+class LibCall(Expression):
+    def __init__(self,name : str,inputs : list,typ : Type):
+        self.name = name
+        self.inputs = inputs
+        self.type = copy.deepcopy(typ)
+    
+    def __str__(self):
+        return self.name + "(" + ",".join([str(i) for i in self.inputs]) + ")"

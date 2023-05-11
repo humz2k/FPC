@@ -68,7 +68,6 @@ def compile_metal_lib(fnames,header_out,keep_temps = True,metal_lib_file = None)
     header_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'include','fpc.hpp'))
     init = '''
 #define FPC_TARGET_METAL
-#define FPC_LOGGING
 #include "''' + header_file + '''"
 #include <stdlib.h>
 #include <stdio.h>

@@ -8,6 +8,13 @@ class Line:
     def set_return_type(self,typ):
         self.return_type = typ
 
+class EmptyLine(Line):
+    def __init__(self):
+        super().__init__()
+    
+    def __str__(self):
+        return ""
+
 class SimpleLine(Line):
     def __init__(self,expr : aster.Expression):
         super().__init__()
@@ -621,6 +628,21 @@ def get_parser(filename="tokens.txt"):
     @pg.production('expression : type IDENTIFIER')
     def declaration(state,p):
         return state.declare_variable(p[0],p[1].value)
+    
+    @pg.production('open_dec : type IDENTIFIER COMMA')
+    def open_dec(state,p):
+        state.declare_variable(p[0],p[1].value)
+        return p[0]
+    
+    @pg.production('open_dec : open_dec IDENTIFIER COMMA')
+    def cont_dec(state,p):
+        state.declare_variable(p[0],p[1].value)
+        return p[0]
+    
+    @pg.production('line : open_dec IDENTIFIER SEMI_COLON')
+    def fin_dec(state,p):
+        state.declare_variable(p[0],p[1].value)
+        return EmptyLine()
 
     @pg.production('expression : IDENTIFIER')
     def variable(state,p):
@@ -698,6 +720,60 @@ def get_parser(filename="tokens.txt"):
     @pg.production('expression : func_call_open CLOSE_PAREN')
     def func_call(state : ParserState,p):
         return state.get_func_call(p[0][0],p[0][1:])
+    
+    @pg.production('expression : INT_LIB_ONE OPEN_PAREN expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not isinstance(p[2].type,aster.IntType):
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2]],p[2].type)
+    
+    @pg.production('expression : INT_LIB_TWO OPEN_PAREN expression COMMA expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not isinstance(p[2].type,aster.IntType):
+            raise Exception("Invalid input to Lib function")
+        if not p[2].type == p[4].type:
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2],p[4]],p[2].type)
+    
+    @pg.production('expression : INT_LIB_THREE OPEN_PAREN expression COMMA expression COMMA expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not isinstance(p[2].type,aster.IntType):
+            raise Exception("Invalid input to Lib function")
+        if not p[2].type == p[4].type:
+            raise Exception("Invalid input to Lib function")
+        if not p[2].type == p[6].type:
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2],p[4],p[6]],p[2].type)
+
+    @pg.production('expression : FLOAT_LIB_REL_ONE OPEN_PAREN expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not p[2].type in [aster.HalfType(),aster.FloatType(),aster.DoubleType()]:
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2]],aster.IntType(32))
+
+    @pg.production('expression : FLOAT_LIB_MATH_ONE OPEN_PAREN expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not p[2].type in [aster.HalfType(),aster.FloatType(),aster.DoubleType()]:
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2]],p[2].type)
+    
+    @pg.production('expression : FLOAT_LIB_MATH_TWO OPEN_PAREN expression COMMA expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not p[2].type in [aster.HalfType(),aster.FloatType(),aster.DoubleType()]:
+            raise Exception("Invalid input to Lib function")
+        if not p[2].type == p[4].type:
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2],p[4]],p[2].type)
+    
+    @pg.production('expression : FLOAT_LIB_MATH_THREE OPEN_PAREN expression COMMA expression COMMA expression CLOSE_PAREN')
+    def float_lib_math_one(state : ParserState,p):
+        if not p[2].type in [aster.HalfType(),aster.FloatType(),aster.DoubleType()]:
+            raise Exception("Invalid input to Lib function")
+        if not p[2].type == p[4].type:
+            raise Exception("Invalid input to Lib function")
+        if not p[2].type == p[6].type:
+            raise Exception("Invalid input to Lib function")
+        return aster.LibCall(p[0].value,[p[2],p[4],p[6]],p[2].type)
 
     @pg.error
     def error_handler(state,token):
