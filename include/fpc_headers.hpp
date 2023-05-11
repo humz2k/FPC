@@ -2,6 +2,9 @@
 //#define FPC_LOGGING
 #ifndef FPC_PREPROCESS
 
+#define kernel void
+#define device const
+
 void FPC_init();
 
 namespace FPC{
