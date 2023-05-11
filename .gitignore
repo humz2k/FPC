@@ -145,6 +145,7 @@ dmypy.json
 cython_debug/
 *.metallib
 examples/nobody/*.metallib
+.vscode
 
 # PyCharm
 #  JetBrains specific template is maintainted in a separate JetBrains.gitignore that can
