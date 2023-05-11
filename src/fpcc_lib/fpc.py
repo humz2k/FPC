@@ -1,6 +1,7 @@
 from . import lex
 from . import parse
 import os
+import re
 
 def transpile(fname,target):
 
@@ -84,4 +85,51 @@ FPC::lib.load_library("''' + metal_lib + '''");\n'''
 def compile_lib(fnames,target,header_out,keep_temps=True,**kwargs):
     if target == "Metal":
         return compile_metal_lib(fnames,header_out,keep_temps,**kwargs)
+    
+
+def extract_kernels(fname):
+    with open(fname,"r") as f:
+        raw = f.read()
+    kernel_headers = re.findall(r"\bkernel\b.*\{",raw)
+    kernels = []
+    for kernel in kernel_headers:
+        brace_amount = 1
+        tmp = raw.split(kernel)[1]
+        out = ""
+        for i in tmp:
+            if i == "{":
+                brace_amount += 1
+            if i == "}":
+                brace_amount -= 1
+            out += i
+            if brace_amount == 0:
+                break
+        kernels.append(kernel + out)
+    for kernel in kernels:
+        raw = raw.replace(kernel,"\n"*kernel.count("\n"))
+    kernels_file = "\n".join(kernels)
+    return raw, kernels_file
+            
+def preprocess(fname):
+    tmp_c_file = get_tmp_file("cpp")
+    with open(fname,"r") as f:
+        raw = f.read()
+    raw =  re.sub(r".*fpc_headers\.hpp.*\n","\n",raw)
+    with open(tmp_c_file,"w") as f:
+        f.write(raw)
+    tmp_next_c_file = get_tmp_file("cpp")
+    os.system("clang++ " + tmp_c_file + " -E > " + tmp_next_c_file)
+    tmp_final_c_file = get_tmp_file("cpp")
+    tmp_fpc_file = get_tmp_file("fpc")
+    raw,kernels = extract_kernels(tmp_next_c_file)
+    os.remove(tmp_c_file)
+    os.remove(tmp_next_c_file)
+    header = get_tmp_file("hpp")
+    raw = '#include "' + header + '"\n' + raw
+    with open(tmp_final_c_file,"w") as f:
+        f.write(raw)
+    with open(tmp_fpc_file,"w") as f:
+        f.write(kernels)
+    return tmp_final_c_file,tmp_fpc_file,header
+    #print(raw)
     

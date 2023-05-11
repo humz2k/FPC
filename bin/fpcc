@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'src')))
+import fpcc_lib
+import argparse
+
+if __name__ == "__main__":
+    #preprocessed,kernel_file = fpcc_lib.extract_kernels("preprocessed.cpp")
+    #with open("tmp.cpp","w") as f:
+    #    f.write(preprocessed)
+    #with open("tmp.fpc","w") as f:
+    #    f.write(kernel_file)
+    parser = argparse.ArgumentParser(description="Compile .cfpc")
+    parser.add_argument('files',metavar="<cfpcfile>",type=str, nargs='+')
+    parser.add_argument('--target','-t',metavar="<target>",
+                        required=True,
+                        choices=["Metal"])
+    parser.add_argument('-o',metavar="<output>",type=str,default="a.out")
+    parser.add_argument('--save-temps','-S',action='store_true',default=False)
+    args = parser.parse_args()
+    c_file,kernel_file,this_header = fpcc_lib.preprocess(args.files[0])
+    fpcc_lib.compile_lib([kernel_file],"Metal",this_header,False)
+    #fpcc_lib.compile_lib(args.files,args.target,args.o,keep_temps=args.save_temps)
