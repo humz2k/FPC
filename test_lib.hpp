@@ -1,7 +1,7 @@
 
 #define FPC_TARGET_METAL
 #define FPC_LOGGING
-#include "/Users/humzaqureshi/GitHub/FPC/src/wrappers/fpcc_wrapper.hpp"
+#include "/Users/humzaqureshi/GitHub/FPC/include/fpc.hpp"
 #include <stdlib.h>
 #include <stdio.h>
 

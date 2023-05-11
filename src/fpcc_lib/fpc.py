@@ -35,7 +35,7 @@ def get_tmp_file(extension):
     TMP_FILE_COUNT += 1
     return "__fpctemp__" + str(TMP_FILE_COUNT) + "." + extension
 
-def compile_metal_lib(fnames,header_out,keep_temps = True):
+def compile_metal_lib(fnames,header_out,keep_temps = True,metal_lib_file = None):
     transpiled = []
     bindings = []
     kernel_names = []
@@ -56,13 +56,16 @@ def compile_metal_lib(fnames,header_out,keep_temps = True):
             os.remove(tmp_metal_file)
 
         tmp_air_files.append(tmp_air_file)
-    tmp_lib_file = get_tmp_file("metallib")
+    if type(metal_lib_file) == type(None):
+        tmp_lib_file = get_tmp_file("metallib")
+    else:
+        tmp_lib_file = metal_lib_file
     os.system("xcrun -sdk macosx metallib " + " ".join(tmp_air_files) + " -o " + tmp_lib_file)
     if not keep_temps:
         for tmp in tmp_air_files:
             os.remove(tmp)
     metal_lib = os.path.abspath(tmp_lib_file)
-    header_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'wrappers','fpcc_wrapper.hpp'))
+    header_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'include','fpc.hpp'))
     init = '''
 #define FPC_TARGET_METAL
 #define FPC_LOGGING
@@ -79,7 +82,7 @@ FPC::lib.load_library("''' + metal_lib + '''");\n'''
     with open(header_out,"w") as f:
         f.write(out)
     
-def compile_lib(fnames,target,header_out,keep_temps=True):
+def compile_lib(fnames,target,header_out,keep_temps=True,**kwargs):
     if target == "Metal":
-        return compile_metal_lib(fnames,header_out,keep_temps)
+        return compile_metal_lib(fnames,header_out,keep_temps,**kwargs)
     

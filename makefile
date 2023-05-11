@@ -5,8 +5,9 @@ LDFLAGS=-framework Metal -framework Foundation -framework Cocoa -framework CoreG
 VPATH=./metal-cpp
 
 main:
+	bin/fpclib test.fpc --target Metal -o test_lib.hpp
 	$(CC) test.cpp $(CFLAGS) $(LDFLAGS) -o test.o	
 
-wrapper:
-	$(CC) src/wrappers/fpcc_wrapper.cpp $(CFLAGS) $(LDFLAGS) -o wrapper.o	
-
+clean:
+	rm *.o
+	rm *.metallib
