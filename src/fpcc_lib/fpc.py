@@ -40,6 +40,7 @@ def compile_metal_lib(fnames,header_out,keep_temps = True,metal_lib_file = None)
     transpiled = []
     bindings = []
     kernel_names = []
+    #exit()
     for fname in fnames:
         state = transpile(fname,"Metal")
         transpiled.append(str(state))

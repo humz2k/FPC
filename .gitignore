@@ -144,12 +144,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 *.metallib
-examples/nbody/*.metallib
-examples/nbody/*.o
-examples/nbody/nbody_kernels.hpp
-examples/nbody_fpclib/*.metallib
-examples/nbody_fpclib/*.o
+*.o
 examples/nbody_fpclib/nbody_kernels.hpp
+examples/*/*.o
+examples/*/*.metallib
 .vscode
 
 # PyCharm

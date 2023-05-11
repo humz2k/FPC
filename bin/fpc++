@@ -24,10 +24,11 @@ if __name__ == "__main__":
     header_files = []
     for fname in args.files:
         c_file,kernel_file,this_header = fpcc_lib.preprocess(args.files[0])
-        fpcc_lib.compile_lib([kernel_file],"Metal",this_header,False)
+        fpcc_lib.compile_lib([kernel_file],"Metal",this_header,keep_temps=args.save_temps)
         c_files.append(c_file)
         header_files.append(this_header)
-        os.remove(kernel_file)
+        if not args.save_temps:
+            os.remove(kernel_file)
 
     metal_cpp_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'metal-cpp'))
     metal_extensions_cpp_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'metal-cpp-extensions'))
@@ -37,8 +38,9 @@ if __name__ == "__main__":
     LDFLAGS="-framework Metal -framework Foundation -framework Cocoa -framework CoreGraphics -framework MetalKit"
     os.system(CC + " " + " ".join(c_files) + " " + CFLAGS + " " + LDFLAGS + " -o " + args.o)
 
-    for c_file in c_files:
-        os.remove(c_file)
-    for this_header in header_files:
-        os.remove(this_header)
-    #fpcc_lib.compile_lib(args.files,args.target,args.o,keep_temps=args.save_temps)
+    if not args.save_temps:
+        for c_file in c_files:
+            os.remove(c_file)
+        for this_header in header_files:
+            os.remove(this_header)
+        #fpcc_lib.compile_lib(args.files,args.target,args.o,keep_temps=args.save_temps)

@@ -1,8 +1,6 @@
 //#define FPC_TARGET_METAL
 //#define FPC_LOGGING
 #ifndef FPC_PREPROCESS
-#include <iostream>
-#include <map>
 
 void FPC_init();
 
