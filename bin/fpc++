@@ -19,6 +19,7 @@ if __name__ == "__main__":
                         choices=["Metal"])
     parser.add_argument('-o',metavar="<output>",type=str,default="a.out")
     parser.add_argument('--save-temps','-S',action='store_true',default=False)
+    parser.add_argument('--shared',action='store_true',default=False)
     args = parser.parse_args()
     c_files = []
     header_files = []
@@ -36,7 +37,10 @@ if __name__ == "__main__":
     CC="clang++"
     CFLAGS="-Wall -std=c++17 -I" + metal_cpp_dir + " -I" + metal_extensions_cpp_dir + " -fno-objc-arc"
     LDFLAGS="-framework Metal -framework Foundation -framework Cocoa -framework CoreGraphics -framework MetalKit"
-    os.system(CC + " " + " ".join(c_files) + " " + CFLAGS + " " + LDFLAGS + " -o " + args.o)
+    do_shared = ""
+    if args.shared:
+        do_shared = " --shared"
+    os.system(CC + " " + " ".join(c_files) + " " + CFLAGS + " " + LDFLAGS + " -o " + args.o + do_shared)
 
     if not args.save_temps:
         for c_file in c_files:
