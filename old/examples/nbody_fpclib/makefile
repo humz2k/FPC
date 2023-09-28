@@ -5,7 +5,7 @@ LDFLAGS=-framework Metal -framework Foundation -framework Cocoa -framework CoreG
 VPATH=../../metal-cpp
 
 main:
-	fpclib nbody_kernels.fpc --target Metal -o nbody_kernels.hpp
+	fpclib nbody_kernels.fpc --target Metal -o nbody_kernels.hpp --save-temps
 	$(CC) nbody.cpp $(CFLAGS) $(LDFLAGS) -o nbody.o	
 
 clean:
