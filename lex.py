@@ -14,14 +14,3 @@ def get_lexer(filename = "tokens.txt"):
             lexer.add(i[0],i[1])
     
     return lexer.build()
-
-lexer = get_lexer()
-
-s = None
-with open("test.fpc","r") as f:
-    s = f.read()
-
-tokens = lexer.lex(s)
-
-for i in tokens:
-    print(i)

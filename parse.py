@@ -1,5 +1,4 @@
 from rply import ParserGenerator
-from . import aster
 
 class ParserState(object):
     def __init__(self):
@@ -16,7 +15,29 @@ def get_parser(filename="tokens.txt"):
     if "IGNORE" in tokens:
         tokens.remove("IGNORE")
     pg = ParserGenerator(tokens, precedence=[
-        
+        ('left',[","]),
+        ('left',["AND_ASSIGN","XOR_ASSIGN","OR_ASSIGN"]),
+        ('left',["LEFT_ASSIGN","RIGHT_ASSIGN"]),
+        ('left',["MUL_ASSIGN","DIV_ASSIGN", "MOD_ASSIGN"]),
+        ('left',["ADD_ASSIGN","SUB_ASSIGN"]),
+        ('left',["="]),
+        ('left',["TERNARY"]),
+        ('left',["OR_OP"]),
+        ('left',["AND_OP"]),
+        ('left',["OR"]),
+        ('left',["^"]),
+        ('left',["&"]),
+        #('left',["INC_OP", "DEC_OP", "(", ")", ".", "PTR_OP"]),
+        #('left',["*", "/", "MOD"]),
+        #('left',["+", "-"]),
+        #('left',["<<", ">>"]),
+        #('left',["<", "<="]),
+        #('left',[">", ">="]),
+        #('left',["==", "!="]),
+        #('left',["&"]),
+        #('left',["^"]),
+        #('left',["OR"]),
+        #('right',["?", ":"])
     ])
 
     @pg.production('primary_expression : IDENTIFIER')
@@ -109,7 +130,7 @@ def get_parser(filename="tokens.txt"):
         state.log('exclusive_or_expression')
 
     @pg.production('inclusive_or_expression : exclusive_or_expression')
-    @pg.production('inclusive_or_expression : inclusive_or_expression | exclusive_or_expression')
+    @pg.production('inclusive_or_expression : inclusive_or_expression OR exclusive_or_expression')
     def inclusive_or_expression(state,p):
         state.log('inclusive_or_expression')
 
@@ -119,12 +140,12 @@ def get_parser(filename="tokens.txt"):
         state.log('logical_and_expression')
 
     @pg.production('logical_or_expression : logical_and_expression')
-    @pg.production('logical_or_expression : logical_or_expression OP_OP logical_and_expression')
+    @pg.production('logical_or_expression : logical_or_expression OR_OP logical_and_expression')
     def logical_or_expression(state,p):
         state.log('logical_or_expression')
 
     @pg.production('conditional_expression : logical_or_expression')
-    @pg.production('conditional_expression : logical_or_expression ? expression : conditional_expression')
+    @pg.production('conditional_expression : logical_or_expression ? expression : conditional_expression',precedence="TERNARY")
     def conditional_expression(state,p):
         state.log('conditional_expression')
 
@@ -199,7 +220,7 @@ def get_parser(filename="tokens.txt"):
     @pg.production('type_specifier : UNSIGNED')
     @pg.production('type_specifier : struct_or_union_specifier')
     @pg.production('type_specifier : enum_specifier')
-    @pg.production('type_specifier : TYPE_NAME')
+    #@pg.production('type_specifier : TYPE_NAME')
     def type_specifier(state,p):
         state.log('type_specifier')
 
@@ -218,6 +239,22 @@ def get_parser(filename="tokens.txt"):
     @pg.production('struct_declaration_list : struct_declaration_list struct_declaration')
     def struct_declaration_list(state,p):
         state.log('struct_declaration_list')
+
+    @pg.production('struct_declaration : specifier_qualifier_list struct_declarator_list ;')
+    def struct_declaration(state,p):
+        state.log('struct_declaration')
+
+    @pg.production('specifier_qualifier_list : type_specifier specifier_qualifier_list')
+    @pg.production('specifier_qualifier_list : type_specifier')
+    @pg.production('specifier_qualifier_list : type_qualifier specifier_qualifier_list')
+    @pg.production('specifier_qualifier_list : type_qualifier')
+    def specifier_qualifier_list(state,p):
+        state.log('specifier_qualifier_list')
+
+    @pg.production('struct_declarator_list : struct_declarator')
+    @pg.production('struct_declarator_list : struct_declarator_list struct_declarator')
+    def struct_declaration_list(state,p):
+        state.log('struct_declarator_list')
 
     @pg.production('struct_declarator : declarator')
     @pg.production('struct_declarator : : constant_expression')
@@ -251,7 +288,157 @@ def get_parser(filename="tokens.txt"):
     def declarator(state,p):
         state.log('declarator')
     
+    @pg.production('direct_declarator : IDENTIFIER')
+    @pg.production('direct_declarator : ( declarator )')
+    @pg.production('direct_declarator : direct_declarator [ constant_expression ]')
+    @pg.production('direct_declarator : direct_declarator [ ]')
+    @pg.production('direct_declarator : direct_declarator ( parameter_type_list )')
+    @pg.production('direct_declarator : direct_declarator ( identifier_list )')
+    @pg.production('direct_declarator : direct_declarator ( )')
+    def direct_declarator(state,p):
+        state.log('direct_declarator')
 
+    @pg.production('pointer : *')
+    @pg.production('pointer : * type_qualifier_list')
+    @pg.production('pointer : * pointer')
+    @pg.production('pointer : * type_qualifier_list pointer')
+    def pointer(state,p):
+        state.log('pointer')
+
+    @pg.production('type_qualifier_list : type_qualifier')
+    @pg.production('type_qualifier_list : type_qualifier_list type_qualifier')
+    def type_qualifier_list(state,p):
+        state.log('type_qualifier_list')
+
+    @pg.production('parameter_type_list : parameter_list')
+    @pg.production('parameter_type_list : parameter_list , ELLIPSIS')
+    def parameter_type_list(state,p):
+        state.log('parameter_type_list')
+
+    @pg.production('parameter_list : parameter_declaration')
+    @pg.production('parameter_list : parameter_list , parameter_declaration')
+    def parameter_list(state,p):
+        state.log('parameter_list')
+
+    @pg.production('parameter_declaration : declaration_specifiers declarator')
+    @pg.production('parameter_declaration : declaration_specifiers abstract_declarator')
+    @pg.production('parameter_declaration : declaration_specifiers')
+    def parameter_declaration(state,p):
+        state.log('parameter_declaration')
+
+    @pg.production('identifier_list : IDENTIFIER')
+    @pg.production('identifier_list : identifier_list , IDENTIFIER')
+    def identifier_list(state,p):
+        state.log('identifier_list')
+
+    @pg.production('type_name : specifier_qualifier_list')
+    @pg.production('type_name : specifier_qualifier_list abstract_declarator')
+    def type_name(state,p):
+        state.log('type_name')
+
+    @pg.production('abstract_declarator : pointer')
+    @pg.production('abstract_declarator : direct_abstract_declarator')
+    @pg.production('abstract_declarator : pointer direct_abstract_declarator')
+    def abstract_declarator(state,p):
+        state.log('abstract_declarator')
+
+    @pg.production('direct_abstract_declarator : ( abstract_declarator )')
+    @pg.production('direct_abstract_declarator : [ ]')
+    @pg.production('direct_abstract_declarator : [ constant_expression ]')
+    @pg.production('direct_abstract_declarator : direct_abstract_declarator [ ]')
+    @pg.production('direct_abstract_declarator : direct_abstract_declarator [ constant_expression ]')
+    @pg.production('direct_abstract_declarator : ( )')
+    @pg.production('direct_abstract_declarator : ( parameter_type_list )')
+    @pg.production('direct_abstract_declarator : direct_abstract_declarator ( )')
+    @pg.production('direct_abstract_declarator : direct_abstract_declarator ( parameter_type_list )')
+    def direct_abstract_declarator(state,p):
+        state.log('direct_abstract_declarator')
+
+    @pg.production('initializer : assignment_expression')
+    @pg.production('initializer : { initializer_list }')
+    @pg.production('initializer : { initializer_list , }')
+    def initializer(state,p):
+        state.log('initializer')
+
+    @pg.production('initializer_list : initializer')
+    @pg.production('initializer_list : initializer_list , initializer')
+    def initializer_list(state,p):
+        state.log('initializer_list')
+
+    @pg.production('statement : labeled_statement')
+    @pg.production('statement : compound_statement')
+    @pg.production('statement : expression_statement')
+    @pg.production('statement : selection_statement')
+    @pg.production('statement : iteration_statement')
+    @pg.production('statement : jump_statement')
+    def statement(state,p):
+        state.log('statement')
+
+    @pg.production('labeled_statement : IDENTIFIER : statement')
+    @pg.production('labeled_statement : CASE constant_expression : statement')
+    @pg.production('labeled_statement : DEFAULT : statement')
+    def labeled_statement(state,p):
+        state.log('labeled_statement')
+
+    @pg.production('compound_statement : { }')
+    @pg.production('compound_statement : { statement_list }')
+    @pg.production('compound_statement : { declaration_list }')
+    @pg.production('compound_statement : { declaration_list statement_list }')
+    def compound_statement(state,p):
+        state.log('compound_statement')
+
+    @pg.production('declaration_list : declaration')
+    @pg.production('declaration_list : declaration_list declaration')
+    def declaration_list(state,p):
+        state.log('declaration_list')
+
+    @pg.production('statement_list : statement')
+    @pg.production('statement_list : statement_list statement')
+    def statement_list(state,p):
+        state.log('statement_list')
+
+    @pg.production('expression_statement : ;')
+    @pg.production('expression_statement : expression ;')
+    def expression_statement(state,p):
+        state.log('expression_statement')
+
+    @pg.production('selection_statement : IF ( expression ) statement')
+    @pg.production('selection_statement : IF ( expression ) statement ELSE statement')
+    @pg.production('selection_statement : SWITCH ( expression ) statement')
+    def selection_statement(state,p):
+        state.log('selection_statement')
+
+    @pg.production('iteration_statement : WHILE ( expression ) statement')
+    @pg.production('iteration_statement : DO statement WHILE ( expression ) ;')
+    @pg.production('iteration_statement : FOR ( expression_statement expression_statement ) statement')
+    @pg.production('iteration_statement : FOR ( expression_statement expression_statement expression ) statement')
+    def iteration_statement(state,p):
+        state.log('iteration_statement')
+
+    @pg.production('jump_statement : GOTO IDENTIFIER ;')
+    @pg.production('jump_statement : CONTINUE ;')
+    @pg.production('jump_statement : BREAK ;')
+    @pg.production('jump_statement : RETURN ;')
+    @pg.production('jump_statement : RETURN expression ;')
+    def jump_statement(state,p):
+        state.log('jump_statement')
+
+    @pg.production('translation_unit : external_declaration')
+    @pg.production('translation_unit : translation_unit external_declaration')
+    def translation_unit(state,p):
+        state.log('translation_unit')
+
+    @pg.production('external_declaration : function_definition')
+    @pg.production('external_declaration : declaration')
+    def external_declaration(state,p):
+        state.log('external_declaration')
+
+    @pg.production('function_definition : declaration_specifiers declarator declaration_list compound_statement')
+    @pg.production('function_definition : declaration_specifiers declarator compound_statement')
+    @pg.production('function_definition : declarator declaration_list compound_statement')
+    @pg.production('function_definition : declarator compound_statement')
+    def function_definition(state,p):
+        state.log('function_definition')
 
     @pg.error
     def error_handler(state,token):
@@ -259,5 +446,5 @@ def get_parser(filename="tokens.txt"):
         exit()
 
     out = pg.build()
-    #print(out.lr_table.sr_conflicts)
+    print(out.lr_table.sr_conflicts)
     return out
