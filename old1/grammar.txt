@@ -223,6 +223,8 @@ type_specifier
 	| struct_or_union_specifier
 	| enum_specifier
 	| TYPEDEF_NAME
+	| BUILTIN_VA_LIST
+	| UINT128
 	;
 
 struct_or_union_specifier

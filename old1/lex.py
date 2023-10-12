@@ -1,5 +1,5 @@
-from rply import Token
 from rply import LexerGenerator
+import re
 
 def get_lexer(filename = "tokens.txt"):
     
@@ -14,17 +14,3 @@ def get_lexer(filename = "tokens.txt"):
             lexer.add(i[0],i[1])
     
     return lexer.build()
-
-class FPCLexer(object):
-    def __init__(self,string,filename="tokens.txt"):
-        self.tokens = get_lexer(filename).lex(string)
-    
-    def __iter__(self):
-        return self
-
-    def next(self):
-        out = next(self.tokens)
-        return out
-    
-    def __next__(self):
-        return self.next()
