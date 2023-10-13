@@ -16,7 +16,7 @@ class Base:
         return self
     
     def push_front(self,t):
-        self.p = [t] + p
+        self.p = [t] + self.p
         return self
     
     def add_back(self,p):

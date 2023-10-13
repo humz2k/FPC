@@ -46,7 +46,6 @@ def get_parser(filename="tokens.txt"):
     @pg.production('declaration-specifiers : type-qualifier declaration-specifiers')
     @pg.production('declaration-specifiers : type-qualifier')
     @pg.production('declaration-specifiers : function-specifier declaration-specifiers')
-    @pg.production('declaration-specifiers : declaration-specifiers')
     def declaration_specifiers(state,p):
         if len(p) == 1:
             return DeclarationSpecifiers(p)
@@ -457,7 +456,9 @@ def get_parser(filename="tokens.txt"):
     @pg.production('init-declarator : declarator')
     @pg.production('init-declarator : declarator = initializer')
     def init_declarator(state,p):
-        return InitDeclarator(p)
+        if len(p) == 1:
+            return InitDeclarator(p)
+        return InitDeclarator([p[0],p[-1]])
 
     @pg.production('compound-statement : { block-item-list }')
     @pg.production('compound-statement : { }')
