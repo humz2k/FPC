@@ -1,4 +1,5 @@
 from rply import Token
+from llvmlite import ir
 
 class Base:
     def __init__(self,p = []):
@@ -30,8 +31,14 @@ class Base:
             else:
                 i.recurse(indent)
 
+    def eval(self,state):
+        print("eval not implemented in " + self.__class__.__name__)
+
 class TranslationUnit(Base):
-    pass
+    def eval(self,state):
+        state.module = ir.Module("")
+        for i in self.p:
+            i.eval(state)
 
 class FunctionDefinition(Base):
     pass
