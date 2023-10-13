@@ -1,6 +1,11 @@
 from rply import Token
 from llvmlite import ir
 
+class State:
+    def __init__(self,lexer,module_name):
+        self.lexer = lexer
+        self.module : ir.Module = ir.Module(module_name)
+
 class Base:
     def __init__(self,p = []):
         #print(self.__class__.__name__)
@@ -31,12 +36,11 @@ class Base:
             else:
                 i.recurse(indent)
 
-    def eval(self,state):
+    def eval(self,state : State):
         print("eval not implemented in " + self.__class__.__name__)
 
 class TranslationUnit(Base):
-    def eval(self,state):
-        state.module = ir.Module("")
+    def eval(self,state : State):
         for i in self.p:
             i.eval(state)
 
