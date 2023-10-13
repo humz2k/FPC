@@ -1,5 +1,6 @@
 from rply import ParserGenerator
 from aster import *
+from rply import Token
 
 def get_parser(filename="tokens.txt"):
     with open(filename,"r") as f:
@@ -81,8 +82,8 @@ def get_parser(filename="tokens.txt"):
     @pg.production('struct-or-union-specifier : struct-or-union identifier')
     def struct_or_union_specifier(state,p):
         if p[0].name == "STRUCT":
-            return StructSpecifier(p)
-        return UnionSpecifier(p)
+            return StructSpecifier(p[1:])
+        return UnionSpecifier(p[1:])
 
     @pg.production('struct-or-union : STRUCT')
     @pg.production('struct-or-union : UNION')
@@ -129,7 +130,9 @@ def get_parser(filename="tokens.txt"):
     @pg.production('declarator : pointer direct-declarator')
     @pg.production('declarator : direct-declarator')
     def declarator(state,p):
-        return Declarator(p)
+        if len(p) == 1:
+            return p[0]
+        return p[1].push_front(p[0])
 
     @pg.production('pointer : * type-qualifier-list')
     @pg.production('pointer : *')
@@ -153,6 +156,11 @@ def get_parser(filename="tokens.txt"):
 
     @pg.production('direct-declarator : identifier')
     @pg.production('direct-declarator : ( declarator )')
+    def direct_declarator_base(state,p):
+        if len(p) == 1:
+            return DirectDeclarator([p[0]])
+        return DirectDeclarator([p[1]])
+    
     @pg.production('direct-declarator : direct-declarator [ type-qualifier-list assignment-expression ]')
     @pg.production('direct-declarator : direct-declarator [ type-qualifier-list ]')
     @pg.production('direct-declarator : direct-declarator [ assignment-expression ]')
@@ -166,7 +174,7 @@ def get_parser(filename="tokens.txt"):
     @pg.production('direct-declarator : direct-declarator ( )')
     @pg.production('direct-declarator : direct-declarator ( identifier-list )')
     def direct_declarator(state,p):
-        return DirectDeclarator(p)
+        return p[0].add_back(p[1:])
     
     @pg.production('conditional-expression : logical-OR-expression')
     @pg.production('assignment-expression : conditional-expression')
@@ -206,56 +214,30 @@ def get_parser(filename="tokens.txt"):
         return ConditionalExpression(p)
 
     @pg.production('logical-OR-expression : logical-OR-expression LOR logical-AND-expression')
-    def logical_or_expression(state,p):
-        pass
-
     @pg.production('logical-AND-expression : logical-AND-expression && inclusive-OR-expression')
-    def logical_and_expression(state,p):
-        pass
-
     @pg.production('inclusive-OR-expression : inclusive-OR-expression OR exclusive-OR-expression')
-    def inclusive_or_expression(state,p):
-        pass
-
     @pg.production('exclusive-OR-expression : exclusive-OR-expression ^ AND-expression')
-    def exclusive_or_expression(state,p):
-        pass
-
     @pg.production('AND-expression : AND-expression & equality-expression')
-    def and_expression(state,p):
-        pass
-
     @pg.production('equality-expression : equality-expression == relational-expression')
     @pg.production('equality-expression : equality-expression != relational-expression')
-    def equality_expression(state,p):
-        pass
-
     @pg.production('relational-expression : relational-expression < shift-expression')
     @pg.production('relational-expression : relational-expression > shift-expression')
     @pg.production('relational-expression : relational-expression <= shift-expression')
     @pg.production('relational-expression : relational-expression >= shift-expression')
-    def relational_expression(state,p):
-        pass
-
     @pg.production('shift-expression : shift-expression << additive-expression')
     @pg.production('shift-expression : shift-expression >> additive-expression')
-    def shift_expression(state,p):
-        pass
-
     @pg.production('additive-expression : additive-expression + multiplicative-expression')
     @pg.production('additive-expression : additive-expression - multiplicative-expression')
-    def additive_expression(state,p):
-        pass
-
     @pg.production('multiplicative-expression : multiplicative-expression * cast-expression')
     @pg.production('multiplicative-expression : multiplicative-expression / cast-expression')
     @pg.production('multiplicative-expression : multiplicative-expression MOD cast-expression')
-    def multiplicative_expression(state,p):
-        pass
+    def binop(state,p):
+        return BinOpExpression(p)
 
     @pg.production('cast-expression : ( type-name ) cast-expression')
     def cast_expression(state,p):
-        pass
+        p1 = [p[1],p[3]]
+        return CastExpression(p1)
 
     @pg.production('unary-expression : ++ unary-expression')
     @pg.production('unary-expression : -- unary-expression')
@@ -268,94 +250,129 @@ def get_parser(filename="tokens.txt"):
     @pg.production('unary-expression : SIZEOF unary-expression')
     @pg.production('unary-expression : SIZEOF ( type-name )')
     def unary_expression(state,p):
-        pass
+        if len(p) == 4:
+            return SizeofType([p[2]])
+        return UnaryExpression(p)
 
     @pg.production('postfix-expression : postfix-expression [ expression ]')
+    def pointer_index(state,p):
+        return PointerIndex(p)
+
     @pg.production('postfix-expression : postfix-expression ( )')
     @pg.production('postfix-expression : postfix-expression ( argument-expression-list )')
-    @pg.production('postfix-expression : postfix-expression . identifier')
-    @pg.production('postfix-expression : postfix-expression -> identifier')
+    def function_call(state,p):
+        if len(p) == 3:
+            return FunctionCall([p[0]])
+        return FunctionCall([p[0]] + p[2:-1])
+
     @pg.production('postfix-expression : postfix-expression ++')
     @pg.production('postfix-expression : postfix-expression --')
+    def post_increment(state,p):
+        return PostIncrement(p)
+
+    @pg.production('postfix-expression : postfix-expression . identifier')
+    def struct_reference(state,p):
+        return StructReference([p[0],p[-1]])
+    
+    @pg.production('postfix-expression : postfix-expression -> identifier')
+    def struct_ptr_reference(state,p):
+        return StructPointerReference([p[0],p[-1]])
+
+    
     @pg.production('postfix-expression : ( type-name ) { initializer-list }')
     @pg.production('postfix-expression : ( type-name ) { initializer-list , }')
     def postfix_expression(state,p):
-        pass
+        raise Exception("WTF IS THIS")
 
     @pg.production('primary-expression : identifier')
     @pg.production('primary-expression : constant')
     @pg.production('primary-expression : string-literal')
     @pg.production('primary-expression : ( expression )')
     def primary_expression(state,p):
-        pass
+        if len(p) == 1:
+            return p[0]
+        return p[1]
 
     @pg.production('expression : assignment-expression')
     @pg.production('expression : expression , assignment-expression')
     def expression(state,p):
-        pass
+        if len(p) == 1:
+            return Expression(p)
+        return p[0].push_back(p[2])
 
     @pg.production('argument-expression-list : assignment-expression')
     @pg.production('argument-expression-list : argument-expression-list , assignment-expression')
     def argument_expression_list(state,p):
-        pass
+        if len(p) == 1:
+            return ArgumentExpressionList(p)
+        return p[0].push_back(p[2])
 
     @pg.production('type-name : specifier-qualifier-list abstract-declarator')
     @pg.production('type-name : specifier-qualifier-list')
     def type_name(state,p):
-        pass
+        return TypeName(p)
     
     @pg.production('abstract-declarator : pointer')
     @pg.production('abstract-declarator : pointer direct-abstract-declarator')
     @pg.production('abstract-declarator : direct-abstract-declarator')
     def abstract_declarator(state,p):
-        pass
+        return AbstractDeclarator(p)
 
     @pg.production('direct-abstract-declarator : ( abstract-declarator )')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ type-qualifier-list assignment-expression ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ type-qualifier-list ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ assignment-expression ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ ]')
     @pg.production('direct-abstract-declarator : [ type-qualifier-list assignment-expression ]')
     @pg.production('direct-abstract-declarator : [ type-qualifier-list ]')
     @pg.production('direct-abstract-declarator : [ assignment-expression ]')
     @pg.production('direct-abstract-declarator : [ ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ STATIC type-qualifier-list assignment-expression ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ STATIC assignment-expression ]')
     @pg.production('direct-abstract-declarator : [ STATIC type-qualifier-list assignment-expression ]')
     @pg.production('direct-abstract-declarator : [ STATIC assignment-expression ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ type-qualifier-list STATIC assignment-expression ]')
     @pg.production('direct-abstract-declarator : [ type-qualifier-list STATIC assignment-expression ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ * ]')
     @pg.production('direct-abstract-declarator : [ ]')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator ( parameter-type-list )')
     @pg.production('direct-abstract-declarator : ( parameter-type-list )')
-    @pg.production('direct-abstract-declarator : direct-abstract-declarator ( )')
     @pg.production('direct-abstract-declarator : ( )')
+    def direct_abstract_declarator_base(state,p):
+        return DirectAbstractDeclarator(p)
+
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ type-qualifier-list assignment-expression ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ type-qualifier-list ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ assignment-expression ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ STATIC type-qualifier-list assignment-expression ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ STATIC assignment-expression ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ type-qualifier-list STATIC assignment-expression ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator [ * ]')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator ( parameter-type-list )')
+    @pg.production('direct-abstract-declarator : direct-abstract-declarator ( )')
     def direct_abstract_declarator(state,p):
-        pass
+        return p[0].add_back(p[1:])
 
     @pg.production('parameter-type-list : parameter-list')
     @pg.production('parameter-type-list : parameter-list , ...')
     def parameter_type_list(state,p):
-        pass
+        if len(p) == 1:
+            return p[0]
+        return p[0].push_back(p[-1])
 
     @pg.production('parameter-list : parameter-declaration')
     @pg.production('parameter-list : parameter-list , parameter-declaration')
     def parameter_list(state,p):
-        pass
+        if len(p) == 1:
+            return ParameterList(p)
+        return p[0].push_back(p[2])
 
     @pg.production('parameter-declaration : declaration-specifiers declarator')
     @pg.production('parameter-declaration : declaration-specifiers abstract-declarator')
     @pg.production('parameter-declaration : declaration-specifiers')
     def parameter_list(state,p):
-        pass
+        return ParameterDeclaration(p)
 
     @pg.production('initializer-list : designation initializer')
     @pg.production('initializer-list : initializer')
     @pg.production('initializer-list : initializer-list , designation initializer')
     @pg.production('initializer-list : initializer-list , initializer')
     def initializer_list(state,p):
-        pass
+        if len(p) <= 2:
+            return InitializerList(p)
+        return p[0].add_back(p[2:])
 
     @pg.production('designation : designator-list =')
     def designation(state,p):
@@ -373,18 +390,22 @@ def get_parser(filename="tokens.txt"):
 
     @pg.production('constant-expression : conditional-expression')
     def constant_expression(state,p):
-        pass
+        return p[0]
 
     @pg.production('initializer : assignment-expression')
     @pg.production('initializer : { initializer-list }')
     @pg.production('initializer : { initializer-list , }')
     def initializer(state,p):
-        pass
+        if len(p) == 1:
+            return p[0]
+        return p[1]
     
     @pg.production('identifier-list : identifier')
     @pg.production('identifier-list : identifier-list , identifier')
     def identifier_list(state,p):
-        pass
+        if len(p) == 1:
+            return IdentifierList(p)
+        return p[0].push_back(p[2])
 
     @pg.production('enum-specifier : ENUM identifier { enumerator-list }')
     @pg.production('enum-specifier : ENUM { enumerator-list }')
@@ -392,56 +413,70 @@ def get_parser(filename="tokens.txt"):
     @pg.production('enum-specifier : ENUM { enumerator-list , }')
     @pg.production('enum-specifier : ENUM identifier')
     def enum_specifier(state,p):
-        pass
+        if len(p) == 2:
+            return EnumSpecifier([p[1]])
+        if isinstance(p[1],Token):
+            return EnumSpecifier([p[2]])
+        return EnumSpecifier([p[1],p[3]])
 
     @pg.production('enumerator-list : enumerator')
     @pg.production('enumerator-list : enumerator-list , enumerator')
     def enumerator_list(state,p):
-        pass
+        if len(p) == 1:
+            return EnumList(p)
+        return p[0].push_back(p[2])
 
     @pg.production('enumerator : ENUMERATION-CONSTANT')
     @pg.production('enumerator : ENUMERATION-CONSTANT = constant-expression')
     def enumerator(state,p):
-        pass
+        return Enumerator(p)
 
     @pg.production('function-specifier : INLINE')
     def function_specifier(state,p):
-        pass
+        return FunctionSpecifier(p)
 
     @pg.production('declaration-list : declaration')
     @pg.production('declaration-list : declaration-list declaration')
     def declaration_list(state,p):
-        pass
+        if len(p) == 1:
+            return DeclarationList(p)
+        return p[0].push_back(p[1])
 
     @pg.production('declaration : declaration-specifiers init-declarator-list ;')
     @pg.production('declaration : declaration-specifiers ;')
     def declaration(state,p):
-        pass
+        return Declaration(p[:-1])
 
     @pg.production('init-declarator-list : init-declarator')
     @pg.production('init-declarator-list : init-declarator-list , init-declarator')
     def init_declarator_list(state,p):
-        pass
+        if len(p) == 1:
+            return InitDeclaratorList(p)
+        return p[0].push_back(p[2])
 
     @pg.production('init-declarator : declarator')
     @pg.production('init-declarator : declarator = initializer')
     def init_declarator(state,p):
-        pass
+        return InitDeclarator(p)
 
     @pg.production('compound-statement : { block-item-list }')
     @pg.production('compound-statement : { }')
     def compound_statement(state,p):
-        pass
+        if len(p) == 2:
+            return CompoundStatement([])
+        return CompoundStatement(p[1])
 
     @pg.production('block-item-list : block-item')
     @pg.production('block-item-list : block-item-list block-item')
     def block_item_list(state,p):
-        pass
+        if len(p) == 1:
+            return [p[0]]
+        return p[0] + [p[1]]
 
     @pg.production('block-item : declaration')
     @pg.production('block-item : statement')
     def block_item(state,p):
-        pass
+        return p[0]
 
     @pg.production('statement : labeled-statement')
     @pg.production('statement : compound-statement')
@@ -450,41 +485,93 @@ def get_parser(filename="tokens.txt"):
     @pg.production('statement : iteration-statement')
     @pg.production('statement : jump-statement')
     def statement(state,p):
-        pass
+        return p[0]
 
     @pg.production('labeled-statement : identifier COLON statement')
+    def label_base(state,p):
+        return Label([p[0],p[2]])
+    
     @pg.production('labeled-statement : CASE constant-expression COLON statement')
     @pg.production('labeled-statement : DEFAULT COLON statement')
     def labeled_statement(state,p):
-        pass
+        if len(p) == 3:
+            return SwitchDefault([p[-1]])
+        return SwitchLabel([p[1],p[-1]])
+        
 
     @pg.production('expression-statement : expression ;')
     @pg.production('expression-statement : ;')
     def expression_statement(state,p):
-        pass
+        if len(p) == 1:
+            return EmptyExpression()
+        return p[0]
 
     @pg.production('selection-statement : IF ( expression ) statement')
     @pg.production('selection-statement : IF ( expression ) statement ELSE statement')
+    def if_statement(state,p):
+        if len(p) == 5:
+            return IfStatement([p[2],p[4]])
+        return IfStatement([p[2],p[4],p[6]])
+
     @pg.production('selection-statement : SWITCH ( expression ) statement')
     def selection_statement(state,p):
-        pass
+        return SwitchStatement([p[2],p[-1]])
 
     @pg.production('iteration-statement : WHILE ( expression ) statement')
+    def while_loop(state,p):
+        return WhileLoop([p[2],p[-1]])
+
     @pg.production('iteration-statement : DO statement WHILE ( expression ) ;')
+    def do_while_loop(state,p):
+        return DoWhileLoop([p[-3],p[1]])
+
     @pg.production('iteration-statement : FOR ( expression ; expression ; expression ) statement')
+    def for_loop_1(state,p):
+        return ForLoop([p[2],p[4],p[6],p[-1]])
+    
     @pg.production('iteration-statement : FOR ( expression ; expression ; ) statement')
+    def for_loop_2(state,p):
+        return ForLoop([p[2],p[4],EmptyExpression(),p[-1]])
+
     @pg.production('iteration-statement : FOR ( expression ; ; expression ) statement')
+    def for_loop_3(state,p):
+        return ForLoop([p[2],EmptyExpression(),p[5],p[-1]])
+    
     @pg.production('iteration-statement : FOR ( ; expression ; expression ) statement')
+    def for_loop_4(state,p):
+        return ForLoop([EmptyExpression(),p[3],p[5],p[-1]])
+
     @pg.production('iteration-statement : FOR ( expression ; ; ) statement')
+    def for_loop_5(state,p):
+        return ForLoop([p[2],EmptyExpression(),EmptyExpression(),p[-1]])
+
     @pg.production('iteration-statement : FOR ( ; expression ; ) statement')
+    def for_loop_6(state,p):
+        return ForLoop([EmptyExpression(),p[3],EmptyExpression(),p[-1]])
+
     @pg.production('iteration-statement : FOR ( ; ; expression ) statement')
+    def for_loop_7(state,p):
+        return ForLoop([EmptyExpression(),EmptyExpression(),p[-3],p[-1]])
+
     @pg.production('iteration-statement : FOR ( ; ; ) statement')
+    def for_loop_8(state,p):
+        return ForLoop([EmptyExpression(),EmptyExpression(),EmptyExpression(),p[-1]])
+    
     @pg.production('iteration-statement : FOR ( declaration expression ; expression ) statement')
+    def for_loop_9(state,p):
+        return ForLoop([p[2],p[3],p[5],p[-1]])
+    
     @pg.production('iteration-statement : FOR ( declaration expression ; ) statement')
+    def for_loop_10(state,p):
+        return ForLoop([p[2],p[3],EmptyExpression(),p[-1]])
+    
     @pg.production('iteration-statement : FOR ( declaration ; expression ) statement')
+    def for_loop_11(state,p):
+        return ForLoop([p[2],EmptyExpression(),p[4],p[-1]])
+    
     @pg.production('iteration-statement : FOR ( declaration ; ) statement')
-    def iteration_statement(state,p):
-        pass
+    def for_loop_12(state,p):
+        return ForLoop([p[2],EmptyExpression(),EmptyExpression(),p[-1]])
 
     @pg.production('jump-statement : GOTO identifier')
     @pg.production('jump-statement : CONTINUE ;')
@@ -492,20 +579,28 @@ def get_parser(filename="tokens.txt"):
     @pg.production('jump-statement : RETURN ;')
     @pg.production('jump-statement : RETURN expression ;')
     def jump_statement(state,p):
-        pass
+        if p[0].name == "GOTO":
+            return Goto([p[1]])
+        if p[0].name == "CONTINUE":
+            return Continue()
+        if p[0].name == "BREAK":
+            return Break()
+        if len(p) == 2:
+            return Return()
+        return Return([p[1]])
 
     @pg.production('identifier : IDENTIFIER')
     def identifier(state,p):
-        return p[0]
+        return Identifier([p[0]])
     
     @pg.production('string-literal : STRING_LITERAL')
     def string_literal(state,p):
-        return p[0]
+        return StringLiteral([p[0]])
 
     @pg.production('constant : I_CONSTANT')
     @pg.production('constant : F_CONSTANT')
     def constant(state,p):
-        return p[0]
+        return Constant([p[0]])
 
     @pg.error
     def error_handler(state,token):

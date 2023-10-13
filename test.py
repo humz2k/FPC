@@ -17,4 +17,5 @@ state = State(lexer)
 
 parser = get_parser()
 out = parser.parse(state.lexer,state)
+out.recurse()
 print(out)
