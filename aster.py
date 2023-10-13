@@ -47,7 +47,11 @@ class TranslationUnit(Base):
 class FunctionDefinition(Base):
     def eval(self,state : State):
         typ,definition,statement = self.p
-        print(typ.eval(state))
+        ret_type = typ.eval(state)
+        n_ptr = definition.is_ptr()
+        for i in range(n_ptr):
+            ret_type = ir.PointerType(ret_type)
+        name = definition.name()
 
 class DeclarationSpecifiers(Base):
     def eval(self,state : State):
@@ -109,13 +113,30 @@ class Declarator(Base):
     pass
 
 class Pointer(Base):
-    pass
+    def n_ptr(self):
+        n = 0
+        for i in self.p:
+            if isinstance(i,Token):
+                if i.name == "*":
+                    n += 1
+        return n
 
 class TypeQualifierList(Base):
     pass
 
 class DirectDeclarator(Base):
-    pass
+    def is_ptr(self):
+        for i in self.p:
+            if isinstance(i,Pointer):
+                return i.n_ptr()
+        return 0
+    
+    def name(self):
+        for i in self.p:
+            if isinstance(i,Token):
+                if i.name == "IDENTIFIER":
+                    return i.value
+        return None
 
 class AssignmentExpression(Base):
     pass
