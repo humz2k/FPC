@@ -45,13 +45,44 @@ class TranslationUnit(Base):
             i.eval(state)
 
 class FunctionDefinition(Base):
-    pass
+    def eval(self,state : State):
+        typ,definition,statement = self.p
+        print(typ.eval(state))
 
 class DeclarationSpecifiers(Base):
-    pass
+    def eval(self,state : State):
+        tmp = ""
+        for i in self.p:
+            if isinstance(i,TypeSpecifier):
+                tmp += i.get() + " "
+        tmp = tmp.strip()
+        unsigned = False
+        out = None
+        if "unsigned" in tmp:
+            unsigned = True
+        if tmp in ["int","unsigned int","signed int"]:
+            out = ir.IntType(32)
+        elif tmp in ["char","unsigned char","signed char"]:
+            out = ir.IntType(8)
+        elif tmp in ["short","unsigned short"]:
+            out = ir.IntType(16)
+        elif tmp in ["long","unsigned long","unsigned long long"]:
+            out = ir.IntType(64)
+        elif tmp == "float":
+            out = ir.FloatType()
+        elif tmp == "half":
+            out = ir.HalfType()
+        elif tmp == "double":
+            out = ir.DoubleType()
+        else:
+            raise Exception("Invalid Type!")
+        out.unsigned = unsigned
+        return out
 
 class TypeSpecifier(Base):
-    pass
+    def get(self):
+        if isinstance(self.p[0],Token):
+            return self.p[0].value
 
 class StructSpecifier(Base):
     pass
