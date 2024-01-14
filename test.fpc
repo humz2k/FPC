@@ -2,7 +2,6 @@
 
 __global__ void test(){
     printf("Hello from thread %d\n",threadIdx.x);
-    return;
 }
 
 
