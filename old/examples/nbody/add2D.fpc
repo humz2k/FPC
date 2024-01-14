@@ -1,5 +1,0 @@
-device kernel add2D[i](const float* in, float mul, float* out){
-    out[thread.i*3] += in[thread.i*3] * mul;
-    out[thread.i*3+1] += in[thread.i*3+1] * mul;
-    out[thread.i*3+2] += in[thread.i*3+2] * mul;
-}

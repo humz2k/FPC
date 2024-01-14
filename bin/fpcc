@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+sys.path = [os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))] + sys.path
+from pycparser import c_generator, parse_file, c_ast
+import argparse
+
+class KernelFixer(c_ast.NodeVisitor):
+    def visit_Decl(self, node : c_ast.Decl):
+        #print(node.quals)
+        if (not "__global__" in node.quals):
+            return
+        if not isinstance(node.type,c_ast.FuncDecl):
+            return
+        #print(node)
+        typ = node.type
+
+        if not typ.args:
+            typ.args = c_ast.ParamList(params = [])
+
+        new_inps = []
+        for v,t in zip(["gridDim","blockIdx","blockDim","threadIdx","warpSize","_ignore"],["dim3","uint3","dim3","uint3","int","int"]):
+            ty = c_ast.TypeDecl(declname=v, quals=[], align=[], type=c_ast.IdentifierType([t]))
+            newdecl = c_ast.Decl(name=v,quals=[],align=[],storage=[],funcspec=[],type=ty,init=None,bitsize=None,coord=node.coord)
+            new_inps.append(newdecl)
+        typ.args.params = new_inps + typ.args.params
+
+        node.type = typ
+
+def compile_file_cpu(fname,args,includes = [],cxx="gcc-13",openmp=True,O=3,savetemps=False,echo=True,outfile=None):
+    temp_file = fname + "__fpc_temp.c"
+    if outfile is None:
+        outfile = fname + "__fpc_temp.o"
+    with open(fname,"r") as f:
+        with open(temp_file,"w") as f1:
+            f1.write('#include "_cpu_headers.h"\n' + f.read())
+    ast = parse_file(temp_file,use_cpp=True,
+        cpp_path='gcc-13',
+        cpp_args=['-E',r'-I' + os.path.join(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')),"include")] + includes + ['-xc'])
+    os.remove(temp_file)
+
+    v = KernelFixer()
+
+    v.visit(ast)
+
+    generator = c_generator.CGenerator()
+
+    out = '#include "_launch.h"\n' + generator.visit(ast)
+
+    with open(temp_file,"w") as f:
+        f.write(out)
+
+    command = cxx + " -O" + str(O) + " " + " -c " + temp_file + " -o " + outfile + r' -I' + os.path.join(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')),"include")
+    if (openmp):
+        command += " -fopenmp"
+    if echo:
+        print(command)
+    os.system(command)
+
+    if (not savetemps):
+        os.remove(temp_file)
+
+    return outfile
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Compile .fpc")
+    parser.add_argument('files',metavar="<source>",type=str, nargs='+')
+    parser.add_argument('-o',metavar="<output>",type=str,default="a.out")
+    parser.add_argument('-c',action='store_true',default=False)
+    parser.add_argument('-O',metavar="<opt>",type=int,default=3)
+    parser.add_argument('--echo',action='store_true',default=False)
+    parser.add_argument('-I',metavar="<I>",type=str,nargs='+')
+    parser.add_argument('-L',metavar="<L>",type=str,nargs='+')
+    parser.add_argument('-l',metavar="<l>",type=str,nargs='+')
+    parser.add_argument('--save-temps','-S',action='store_true',default=False)
+    parser.add_argument('-cc',metavar="<cc>",type=str,default="gcc-13")
+
+    args = parser.parse_args()
+    to_compile = [i for i in args.files if i.endswith(".fpc")]
+    includes = []
+    link_dir = []
+    links = []
+    try:
+        includes = ["-I" + i for i in args.I]
+    except:
+        pass
+    try:
+        link_dir = ["-L" + i for i in args.L]
+    except:
+        pass
+    try:
+        links = ["-l" + i for i in args.l]
+    except:
+        pass
+
+    if args.c:
+        compile_file_cpu(to_compile[0],args,includes,outfile=args.o,cxx=args.cc,savetemps=args.save_temps,echo=args.echo)
+    else:
+        files = []
+        for i in to_compile:
+            files.append(compile_file_cpu(i,args,includes,cxx=args.cc,savetemps=args.save_temps))
+        link_command = args.cc + " -o " + args.o + " -O" + str(args.O) + " " + " ".join(files) + " " + " ".join(includes + link_dir + links) + " -fopenmp"
+
+        if args.echo:
+            print(link_command)
+        
+        os.system(link_command)
+
+        for i in files:
+            os.remove(i)
+
+        
+        
+
+    
+    
