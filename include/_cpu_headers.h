@@ -1,6 +1,9 @@
 #include "vector_types.h"
 
 #define __host__
+#define __forceinline__ inline
+#define __restrict restrict
+#define __restrict__ restrict
 
 typedef enum {
     fpcSuccess = 0,
