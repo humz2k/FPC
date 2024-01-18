@@ -9,7 +9,7 @@
 
 #define NULL ((void*)0)
 
-typedef long unsigned int size_t;
+#include "../cstdlib/stdlib_macros.h"
 
 void* memcpy(void* dest, const void* src, size_t n);
 

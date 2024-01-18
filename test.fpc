@@ -1,43 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-
-__global__ void set_array(int* restrict out, int n){
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx > n)return;
-    out[idx] = idx;
-}
-
-__global__ void copy_array(int* restrict out, const int* restrict in, int n){
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx > n)return;
-    out[idx] = in[idx];
-}
+#include <time.h>
 
 int main(){
-
-    int blockSize = 128;
-    int n = 1000;
-
-    int numBlocks = (n + (blockSize - 1)) / blockSize;
-
-    int* d_input;
-    int* d_output;
-    int* h_output = (int*)malloc(sizeof(int) * n);
-    fpcMalloc(&d_input,sizeof(int) * n);
-    fpcMalloc(&d_output,sizeof(int) * n);
-
-    set_array<<<numBlocks,blockSize>>>(d_input,n);
-
-    copy_array<<<numBlocks,blockSize>>>(d_output,d_input,n);
-
-    fpcMemcpy(h_output, d_output, sizeof(int) * n, fpcMemcpyDeviceToHost);
-
-    for (int i = 0; i < n; i++){
-        printf("h_output[%d] = %d\n",i,h_output[i]);
-    }
-
-    free(h_output);
-    fpcFree(d_input);
-    fpcFree(d_output);
     return 0;
 }
