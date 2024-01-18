@@ -46,7 +46,7 @@ def compile_file_cpu(fname,args,includes = [],cxx="gcc-13",openmp=True,O=3,savet
 
     generator = c_generator.CGenerator()
 
-    out = '#include "_launch.h"\n' + generator.visit(ast)
+    out = '#include "_cpu_launch.h"\n' + generator.visit(ast)
 
     with open(temp_file,"w") as f:
         f.write(out)
