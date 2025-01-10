@@ -3,9 +3,16 @@
 
 #include <cstdlib>
 #include <utility>
+#include <iostream>
 
-#ifndef FPC_BACKEND_CPU
+#if !defined(FPC_BACKEND_CUDA) && !defined(FPC_BACKEND_CPU)
 #define FPC_BACKEND_CPU
+#endif
+
+#ifdef FPC_BACKEND_CUDA
+#define FPC_KERNEL_DEF __device__
+#else
+#define FPC_KERNEL_DEF
 #endif
 
 namespace fpc {
@@ -43,6 +50,33 @@ static inline void launch(LaunchParams launch_params, Args... args){
 }
 #endif
 
+#ifdef FPC_BACKEND_CUDA
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
+
+template<typename KernelType, typename... Args>
+__global__ void fpc_cuda_launcher(Args... args){
+    KernelType kernel;
+    kernel(args...);
+}
+
+template<typename KernelType, typename... Args>
+static inline void launch(LaunchParams launch_params, Args... args){
+    const int numBlocks = (launch_params.num_threads + (launch_params.blocksize_hint - 1)) / launch_params.blocksize_hint;
+    std::cout << numBlocks << std::endl;
+    fpc_cuda_launcher<KernelType,Args...><<<numBlocks,launch_params.blocksize_hint>>>(args...);
+    gpuErrchk( cudaPeekAtLastError() );
+    gpuErrchk( cudaDeviceSynchronize() );
+}
+#endif
 } // namespace fpc
 
 #endif // _FPC_FPC_HPP_
