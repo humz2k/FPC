@@ -40,10 +40,22 @@ class Kernel {
     const KernelLaunchDimensions blockDim;
     const KernelLaunchDimensions blockIdx;
     const int warpSize = 1;
+#endif
+#if defined(FPC_BACKEND_CPU)
     Kernel(const std::size_t global_thread_idx,
            const std::size_t total_n_threads)
         : threadIdx{global_thread_idx, 0, 0}, blockDim{total_n_threads, 1, 1},
           blockIdx{0, 0, 0} {}
+#endif
+#if defined(FPC_BACKEND_SYCL)
+  private:
+    sycl::nd_item<1> m_item;
+
+  public:
+    Kernel(sycl::nd_item<1> item)
+        : threadIdx{item.get_local_id(0), 0, 0},
+          blockDim{item.get_local_range(0), 1, 1},
+          blockIdx{item.get_group(0), 0, 0}, m_item(item) {}
 #endif
 };
 
@@ -63,14 +75,18 @@ static inline void launch(LaunchParams launch_params, Args... args) {
 #ifdef FPC_BACKEND_SYCL
 template <typename KernelType, typename... Args>
 static inline void launch(LaunchParams launch_params, Args... args) {
+    const int numBlocks =
+        (launch_params.num_threads + (launch_params.blocksize_hint - 1)) /
+        launch_params.blocksize_hint;
+    const size_t num_threads = numBlocks * launch_params.blocksize_hint;
     auto& queue = fpc::get_sycl_queue();
     queue.submit([&](sycl::handler& cgh) {
-        cgh.parallel_for(sycl::range<1>(launch_params.num_threads),
-                         [=](sycl::id<1> idx) {
-                             size_t i = idx[0];
-                             KernelType kernel(i, launch_params.num_threads);
-                             kernel(args...);
-                         });
+        cgh.parallel_for(
+            sycl::nd_range<1>(num_threads, launch_params.blocksize_hint),
+            [=](sycl::nd_item<1> idx) {
+                KernelType kernel(idx);
+                kernel(args...);
+            });
     });
 }
 #endif
