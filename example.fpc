@@ -1,0 +1,34 @@
+#include <fpc/fpc.hpp>
+#include <fpc/fpc_runtime.hpp>
+#include <iostream>
+
+struct MyKernel : public fpc::Kernel {
+using fpc::Kernel::Kernel;
+FPC_KERNEL_DEF void operator()(size_t n, int* array){
+    int idx = threadIdx.x + blockDim.x * blockIdx.x;
+    if (idx >= n)return;
+    printf("Hello from thread %d\n",idx);
+    array[idx] = idx;
+}
+};
+
+
+int main(){
+    size_t n = 200;
+
+    int* array;
+    fpcMalloc(&array,n * sizeof(int));
+
+    fpc::launch<MyKernel>(fpc::LaunchParams(n),n,array);
+    fpcDeviceSynchronize();
+
+    int* h_array = (int*)malloc(n * sizeof(int));
+    fpcMemcpy(h_array,array,n * sizeof(int),fpcMemcpyDeviceToHost);
+    for (int i = 0; i < n; i++){
+        std::cout << h_array[i] << std::endl;
+    }
+
+    free(h_array);
+    fpcFree(array);
+    return 0;
+}
