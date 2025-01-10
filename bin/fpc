@@ -3,25 +3,32 @@
 import argparse
 import os
 
-INCLUDE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","include")
+INCLUDE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "include")
 
-BACKENDS = ["cuda","cpu"]
+BACKENDS = ["cuda", "cpu"]
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description="FPC compiler wrapper")
-    parser.add_argument("--backend", required=True, choices=BACKENDS,help="FPC backend to use")
-    parser.add_argument("--nvcc", default="nvcc",help="CUDA compiler to use (default = nvcc)")
-    parser.add_argument("--cxx", default="c++",help="C++ compiler to use (default = c++)")
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument(
+        "--backend", required=True, choices=BACKENDS, help="FPC backend to use"
+    )
+    parser.add_argument(
+        "--nvcc", default="nvcc", help="CUDA compiler to use (default = nvcc)"
+    )
+    parser.add_argument(
+        "--cxx", default="c++", help="C++ compiler to use (default = c++)"
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
+
     args, remaining_args = parser.parse_known_args()
+
     if args.backend == "cpu":
-        compile_command = args.cxx + " -I" + INCLUDE_DIR + " -DFPC_BACKEND_CPU -fopenmp -x c++ " + " ".join(remaining_args)
+        compile_command = f"{args.cxx} -I{INCLUDE_DIR} -DFPC_BACKEND_CPU -fopenmp -x c++ {' '.join(remaining_args)}"
         if args.verbose:
             print(compile_command)
         os.system(compile_command)
     elif args.backend == "cuda":
-        compile_command = args.nvcc + " -I" + INCLUDE_DIR + " -DFPC_BACKEND_CUDA -x cu " + " ".join(remaining_args)
+        compile_command = f"{args.nvcc} -I{INCLUDE_DIR} -DFPC_BACKEND_CUDA -x cu {' '.join(remaining_args)}"
         if args.verbose:
             print(compile_command)
         os.system(compile_command)
