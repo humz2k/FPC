@@ -4,8 +4,13 @@
 #include <cstdlib>
 #include <cstring>
 
-#if !defined(FPC_BACKEND_CUDA) && !defined(FPC_BACKEND_CPU)
+#if !defined(FPC_BACKEND_CUDA) && !defined(FPC_BACKEND_CPU) &&                 \
+    !defined(FPC_BACKEND_SYCL)
 #define FPC_BACKEND_CPU
+#endif
+
+#ifdef FPC_BACKEND_SYCL
+#include "fpc_sycl.hpp"
 #endif
 
 #ifdef FPC_BACKEND_CUDA
@@ -31,6 +36,10 @@ inline fpcError_t fpcMalloc(T** devptr, std::size_t size) {
     *devptr = (T*)malloc(size);
     return 0;
 #endif
+#ifdef FPC_BACKEND_SYCL
+    *devptr = sycl::malloc_device<T>(size / sizeof(T), fpc::get_sycl_queue());
+    return 0;
+#endif
 }
 
 inline fpcError_t fpcFree(void* ptr) {
@@ -41,6 +50,10 @@ inline fpcError_t fpcFree(void* ptr) {
     free(ptr);
     return 0;
 #endif
+#ifdef FPC_BACKEND_SYCL
+    sycl::free(ptr, fpc::get_sycl_queue());
+    return 0;
+#endif
 }
 
 inline fpcError_t fpcMemcpy(void* dst, const void* src, std::size_t size,
@@ -48,8 +61,15 @@ inline fpcError_t fpcMemcpy(void* dst, const void* src, std::size_t size,
 #ifdef FPC_BACKEND_CUDA
     return cudaMemcpy(dst, src, size, (cudaMemcpyKind)kind);
 #endif
+#ifdef FPC_BACKEND_CPU
     memcpy(dst, src, size);
     return 0;
+#endif
+#ifdef FPC_BACKEND_SYCL
+    auto& q = fpc::get_sycl_queue();
+    q.memcpy(dst, src, size).wait();
+    return 0;
+#endif
 }
 
 inline fpcError_t fpcDeviceSynchronize() {
@@ -57,6 +77,10 @@ inline fpcError_t fpcDeviceSynchronize() {
     return cudaDeviceSynchronize();
 #endif
 #ifdef FPC_BACKEND_CPU
+    return 0;
+#endif
+#ifdef FPC_BACKEND_SYCL
+    fpc::get_sycl_queue().wait();
     return 0;
 #endif
 }

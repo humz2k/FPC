@@ -5,8 +5,13 @@
 #include <iostream>
 #include <utility>
 
-#if !defined(FPC_BACKEND_CUDA) && !defined(FPC_BACKEND_CPU)
+#if !defined(FPC_BACKEND_CUDA) && !defined(FPC_BACKEND_CPU) &&                 \
+    !defined(FPC_BACKEND_SYCL)
 #define FPC_BACKEND_CPU
+#endif
+
+#ifdef FPC_BACKEND_SYCL
+#include "fpc_sycl.hpp"
 #endif
 
 #ifdef FPC_BACKEND_CUDA
@@ -27,7 +32,7 @@ struct LaunchParams {
 
 class Kernel {
   public:
-#ifdef FPC_BACKEND_CPU
+#if defined(FPC_BACKEND_CPU) || defined(FPC_BACKEND_SYCL)
     struct KernelLaunchDimensions {
         std::size_t x, y, z;
     };
@@ -52,6 +57,21 @@ static inline void launch(LaunchParams launch_params, Args... args) {
         KernelType kernel(i, launch_params.num_threads);
         kernel(std::forward<Args>(args)...);
     }
+}
+#endif
+
+#ifdef FPC_BACKEND_SYCL
+template <typename KernelType, typename... Args>
+static inline void launch(LaunchParams launch_params, Args... args) {
+    auto& queue = fpc::get_sycl_queue();
+    queue.submit([&](sycl::handler& cgh) {
+        cgh.parallel_for(sycl::range<1>(launch_params.num_threads),
+                         [=](sycl::id<1> idx) {
+                             size_t i = idx[0];
+                             KernelType kernel(i, launch_params.num_threads);
+                             kernel(args...);
+                         });
+    });
 }
 #endif
 

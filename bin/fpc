@@ -5,10 +5,11 @@ import os
 
 INCLUDE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "include")
 
-BACKENDS = ["cuda", "cpu"]
+BACKENDS = ["cuda", "cpu", "sycl"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FPC compiler wrapper")
+    parser.add_argument("files", metavar="<file>", type=str, nargs="+")
     parser.add_argument(
         "--backend", required=True, choices=BACKENDS, help="FPC backend to use"
     )
@@ -18,17 +19,31 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cxx", default="c++", help="C++ compiler to use (default = c++)"
     )
+    parser.add_argument(
+        "--syclcc", default="acpp", help="SYCL compiler to use (default = acpp)"
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
 
     args, remaining_args = parser.parse_known_args()
 
     if args.backend == "cpu":
-        compile_command = f"{args.cxx} -I{INCLUDE_DIR} -DFPC_BACKEND_CPU -fopenmp -x c++ {' '.join(remaining_args)}"
+        compile_command = f"{args.cxx} -I{INCLUDE_DIR} -DFPC_BACKEND_CPU -fopenmp -x c++ {' '.join(args.files)} {' '.join(remaining_args)}"
         if args.verbose:
             print(compile_command)
         os.system(compile_command)
     elif args.backend == "cuda":
-        compile_command = f"{args.nvcc} -I{INCLUDE_DIR} -DFPC_BACKEND_CUDA -x cu {' '.join(remaining_args)}"
+        compile_command = f"{args.nvcc} -I{INCLUDE_DIR} -DFPC_BACKEND_CUDA -x cu {' '.join(args.files)} {' '.join(remaining_args)}"
         if args.verbose:
             print(compile_command)
         os.system(compile_command)
+    elif args.backend == "sycl":
+        tmp_files = []
+        for f in args.files:
+            os.system(f"cp {f} {f}.tmp.cpp")
+            tmp_files.append(f"{f}.tmp.cpp")
+        compile_command = f"{args.syclcc} -I{INCLUDE_DIR} -DFPC_BACKEND_SYCL --acpp-cpu-cxx={args.cxx} {' '.join(tmp_files)} {' '.join(remaining_args)}"
+        if args.verbose:
+            print(compile_command)
+        os.system(compile_command)
+        for f in tmp_files:
+            os.remove(f)
