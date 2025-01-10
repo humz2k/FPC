@@ -1,5 +1,12 @@
-example_cpu.o: example_cpu.cpp
-	c++ example_cpu.cpp -Iinclude -DFPC_BACKEND_CPU -o example_cpu.o -fopenmp
 
-example_gpu.o: example_gpu.cu
-	nvcc example_gpu.cu -Iinclude -DFPC_BACKEND_CUDA -lineinfo -Xptxas -v -Xcompiler="-fPIC" -gencode=arch=compute_60,code=sm_60 -o example_gpu.o
+.PHONY: all
+all: example_cpu.o example_gpu.o
+
+example_cpu.o: example.fpc include/fpc/fpc.hpp include/fpc/fpc_runtime.hpp
+	bin/fpc --backend=cpu example.fpc -o example_cpu.o
+
+example_gpu.o: example.fpc include/fpc/fpc.hpp include/fpc/fpc_runtime.hpp
+	bin/fpc --backend=cuda example.fpc -o example_gpu.o -gencode=arch=compute_60,code=sm_60
+
+clean:
+	rm *.o
